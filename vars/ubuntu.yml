@@ -1,0 +1,10 @@
+---
+packages:
+  - git
+  - curl
+  - apache2
+  - libapache2-mod-security2
+apache_conf: "/etc/apache2/apache2.conf"
+apache_user: "www-data"
+
+waf_service_name: apache2

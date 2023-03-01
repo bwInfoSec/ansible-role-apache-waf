@@ -1,0 +1,48 @@
+---
+dependency:
+  name: galaxy
+  enabled: true
+  options:
+    role-file: molecule/shared/requirements.yml
+driver:
+  name: docker
+lint: |
+  ansible-lint
+platforms:
+  - name: debian10
+    image: bwinfosec/debian10-systemd
+    privileged: true
+    override_command: false
+    dns_servers:
+      - 1.1.1.1
+      - 8.8.8.8
+    tmpfs:
+      - /run
+      - /run/lock
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    security_opts:
+      - seccomp=unconfined
+  - name: debian11
+    image: bwinfosec/debian11-systemd
+    privileged: true
+    override_command: false
+    dns_servers:
+      - 1.1.1.1
+      - 8.8.8.8
+    tmpfs:
+      - /run
+      - /run/lock
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    security_opts:
+      - seccomp=unconfined
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ../shared/converge.yml
+    prepare: ../shared/prepare.yml
+verifier:
+  name: ansible

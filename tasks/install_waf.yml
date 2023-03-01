@@ -1,0 +1,146 @@
+---
+- name: Install packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  with_items: "{{ packages }}"
+
+- name: Create modsecurity conf dir
+  ansible.builtin.file:
+    path: "{{ modsec_conf_dir }}"
+    state: directory
+    owner: "{{ apache_user }}"
+    mode: "0700"
+
+- name: Create modsecurity tmp dir
+  ansible.builtin.file:
+    path: "{{ modsec_tmp_dir }}"
+    state: directory
+    owner: "{{ apache_user }}"
+    group: "{{ apache_user }}"
+    mode: "0700"
+
+- name: Create modsecurity log dir
+  ansible.builtin.file:
+    path: "{{ modsec_log_dir }}"
+    state: directory
+    owner: "{{ apache_user }}"
+    mode: "0700"
+
+- name: Create modsecurity data dir
+  ansible.builtin.file:
+    path: "{{ modsec_data_dir }}"
+    state: directory
+    owner: "{{ apache_user }}"
+    group: "{{ apache_user }}"
+    mode: "0700"
+
+- name: Fetch coreruleset
+  ansible.builtin.git:
+    repo: 'https://github.com/coreruleset/coreruleset.git'
+    dest: "{{ crs_dir }}"
+    version: "{{ crs_version }}"
+    force: true
+  changed_when: "'molecule-idempotence-notest' not in ansible_skip_tags"
+
+- name: Copy crs-setup.conf.example to crs-setup.conf
+  ansible.builtin.copy:
+    src: "{{ crs_dir }}/crs-setup.conf.example"
+    dest: "{{ crs_dir }}/crs-setup.conf"
+    mode: '0644'
+    remote_src: true
+    force: false
+
+- name: Copy REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example to REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
+  ansible.builtin.copy:
+    remote_src: true
+    src: "{{ crs_dir }}/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example"
+    dest: "{{ crs_dir }}/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf"
+    force: false
+    mode: '0644'
+
+- name: Copy RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example to RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
+  ansible.builtin.copy:
+    remote_src: true
+    src: "{{ crs_dir }}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example"
+    dest: "{{ crs_dir }}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf"
+    force: false
+    mode: '0644'
+
+- name: Patch apache2 config
+  ansible.builtin.blockinfile:
+    path: "{{ apache_conf }}"
+    insertafter: EOF
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    block: |
+      Include {{ modsec_conf }}
+      Include {{ crs_dir }}/crs-setup.conf
+      IncludeOptional {{ crs_dir }}/plugins/*-before.conf
+      Include {{ crs_dir }}/rules/*.conf
+      IncludeOptional {{ crs_dir }}/plugins/*-after.conf
+
+- name: Patch crs-setup.conf
+  ansible.builtin.blockinfile:
+    path: "{{ crs_dir }}/crs-setup.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    insertafter: "#   setvar:tx.paranoia_level=1"
+    block: |-
+      SecAction \
+        "id:900000,\
+         phase:1,\
+         nolog,\
+         pass,\
+         t:none,\
+         setvar:tx.paranoia_level=1"
+
+- name: Set files for redhat
+  when: ansible_facts['os_family']|lower == 'redhat'
+  block:
+    - name: Remove default modsecurity config file
+      ansible.builtin.file:
+        path: /etc/httpd/conf.d/mod_security.conf
+        state: absent
+
+    - name: Remove default modsecurity config directory
+      ansible.builtin.file:
+        path: /etc/httpd/mod_security.d
+        state: absent
+
+- name: Set files for debian
+  when: ansible_facts['os_family']|lower == 'debian'
+  block:
+    - name: Enable loading of security2
+      ansible.builtin.file:
+        src: /etc/apache2/mods-available/security2.load
+        dest: /etc/apache2/mods-enabled/security2.load
+        state: link
+
+    - name: Disable default security2.conf
+      ansible.builtin.file:
+        path: /etc/apache2/mods-enabled/security2.conf
+        state: absent
+
+- name: Create modsecurity config file
+  ansible.builtin.template:
+    src: modsecurity.conf.j2
+    dest: "{{ modsec_conf }}"
+    mode: 0644
+  notify: "Restart service apache2"
+
+- name: Create unicode mapping file
+  ansible.builtin.template:
+    src: unicode.mapping
+    dest: "{{ modsec_unicode_mapping_file }}"
+    mode: 0644
+  notify: "Restart service apache2"
+
+- name: Remove error prone rule
+  ansible.builtin.file:
+    path: "{{ crs_dir }}/rules/REQUEST-922-MULTIPART-ATTACK.conf"
+    state: absent
+  when: "crs_version == 'v3.3.4'"
+  changed_when: "'molecule-idempotence-notest' not in ansible_skip_tags"
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

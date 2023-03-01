@@ -1,0 +1,10 @@
+---
+packages:
+  - git
+  - curl
+  - httpd
+  - mod_security
+apache_conf: "/etc/httpd/conf/httpd.conf"
+apache_user: "apache"
+
+waf_service_name: httpd

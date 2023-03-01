@@ -1,0 +1,63 @@
+---
+dependency:
+  name: galaxy
+  enabled: true
+  options:
+    requirements-file: molecule/shared/requirements.yml
+driver:
+  name: docker
+lint: |
+  ansible-lint
+platforms:
+  - name: ubuntu1804
+    image: bwinfosec/ubuntu1804-systemd
+    privileged: true
+    override_command: false
+    dns_servers:
+      - 1.1.1.1
+      - 8.8.8.8
+    tmpfs:
+      - /run
+      - /run/lock
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    security_opts:
+      - seccomp=unconfined
+  - name: ubuntu2004
+    image: bwinfosec/ubuntu2004-systemd
+    privileged: true
+    override_command: false
+    dns_servers:
+      - 1.1.1.1
+      - 8.8.8.8
+    tmpfs:
+      - /run
+      - /run/lock
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    security_opts:
+      - seccomp=unconfined
+  - name: ubuntu2204
+    image: bwinfosec/ubuntu2204-systemd
+    privileged: true
+    override_command: false
+    dns_servers:
+      - 1.1.1.1
+      - 8.8.8.8
+    tmpfs:
+      - /run
+      - /run/lock
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    security_opts:
+      - seccomp=unconfined
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ../shared/converge.yml
+    prepare: ../shared/prepare.yml
+verifier:
+  name: ansible

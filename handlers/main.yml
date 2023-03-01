@@ -1,0 +1,5 @@
+---
+- name: Restart service apache2
+  ansible.builtin.service:
+    name: "{{ waf_service_name }}"
+    state: restarted

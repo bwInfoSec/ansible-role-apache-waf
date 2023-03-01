@@ -1,0 +1,6 @@
+---
+- name: Run tests
+  hosts: localhost
+  remote_user: root
+  roles:
+    - apache_waf

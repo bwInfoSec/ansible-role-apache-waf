@@ -1,0 +1,33 @@
+---
+galaxy_info:
+  author: Olaf Pichler
+  description: Install and configure apache2 with mod-security paranoia level 1. This should work for almost all usecases without adaption. Tested on Debian, RHEL and CentOs.
+  license: EUPL1.2 and LGPL
+  min_ansible_version: "2.5"
+  namespace: bwinfosec
+  role_name: apache_waf
+
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - buster
+    - name: Ubuntu
+      versions:
+        - focal
+        - groovy
+        - hirsute
+        - impish
+        - jammy
+    - name: EL
+      versions:
+        - "7"
+        - "8"
+
+  galaxy_tags:
+    - waf
+    - apache2
+    - modsecurity
+    - owasp
+
+dependencies: []

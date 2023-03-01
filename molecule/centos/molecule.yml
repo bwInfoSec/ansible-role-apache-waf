@@ -1,0 +1,33 @@
+---
+dependency:
+  name: galaxy
+  enabled: true
+  options:
+    role-file: molecule/shared/requirements.yml
+driver:
+  name: docker
+lint: |
+  ansible-lint
+platforms:
+  - name: centos8
+    image: bwinfosec/centos8-systemd:latest
+    privileged: true
+    override_command: false
+    dns_servers:
+      - 1.1.1.1
+      - 8.8.8.8
+    tmpfs:
+      - /run
+      - /run/lock
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    security_opts:
+      - seccomp=unconfined
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ../shared/converge.yml
+    prepare: ../shared/prepare.yml
+verifier:
+  name: ansible

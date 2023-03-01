@@ -1,0 +1,17 @@
+---
+- name: Include vars
+  ansible.builtin.include_vars:
+    file: "{{ ansible_distribution | lower }}.yml"
+
+- name: Install WAF
+  ansible.builtin.import_tasks: install_waf.yml
+
+- name: Test WAF
+  when: test_waf
+  block:
+    - name: Test webserver using attack like GET
+      ansible.builtin.uri:
+        url: http://localhost/?e=/bin/bash
+        status_code: 403
+      register: _result
+      failed_when: _result.status != 403
