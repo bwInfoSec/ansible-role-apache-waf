@@ -1,0 +1,4 @@
+molecule[docker]
+ansible-core
+setuptools
+ansible-lint
