@@ -4,4 +4,4 @@
   tasks:
     - name: Include ansible-role-apache-waf
       ansible.builtin.include_role:
-        name: apache_waf
+        name: bwinfosec.apache_waf
