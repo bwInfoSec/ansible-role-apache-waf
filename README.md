@@ -1,3 +1,5 @@
+![Molecule Test](https://github.com/bwinfosec/ansible-role-apache-waf/actions/workflows/molecule-test.yml/badge.svg)
+
 ansible-role-apache-waf
 =========
 
@@ -11,4 +13,4 @@ This work is licensed under the [LGPL](https://www.gnu.org/licenses/lgpl-3.0.htm
 If you redistribute this code please also include the AUTHORS file.
 
 ## Contribution
-If you want to contribute do so by submitting a pull request to https://github.com/bwInfoSec/ansible-role-apache-waf 
+If you want to contribute feel free to do so by creating a pull request on [github](https://github.com/bwInfoSec/ansible-role-apache-waf).
