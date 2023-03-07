@@ -24,9 +24,12 @@ ansible-galaxy install bwinfosec.apache_waf
 ## Example Playbook
 
 ```yml
-    - hosts: webserver
-      roles:
-         - bwinfosec.apache_waf
+- name: Setup webserver with WAF
+  hosts: webserver
+  become: true
+
+  roles:
+    - bwinfosec.apache_waf
 ```
 
 ## Local Development
