@@ -1,4 +1,4 @@
-![Molecule Test](https://github.com/bwinfosec/ansible-role-apache-waf/actions/workflows/molecule-test.yml/badge.svg)
+[![Molecule Test](https://github.com/bwInfoSec/ansible-role-apache-waf/actions/workflows/molecule-test.yml/badge.svg)](https://github.com/bwInfoSec/ansible-role-apache-waf/actions/workflows/molecule-test.yml)
 
 ansible-role-apache-waf
 =========
