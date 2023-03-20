@@ -5,6 +5,6 @@ modsec_tmp_dir: "/var/cache/modsecurity"
 modsec_data_dir: "/var/cache/modsecurity"
 modsec_log_dir: "/var/log/mod_security"
 modsec_conf_dir: "/opt/mod_security"
-modsec_conf: "{{modsec_conf_dir}}/modsecurity.conf"
+modsec_conf: "{{ modsec_conf_dir }}/modsecurity.conf"
 modsec_unicode_mapping_file: "/opt/mod_security/unicode.mapping"
 test_waf: true
