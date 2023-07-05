@@ -33,9 +33,21 @@ ansible-galaxy install bwinfosec.apache_waf
 ```
 
 ## Local Development
+This role includes a *Molecule* test to execute on RHEL/CentOS, Debian and Ubuntu.
 
-This role includes a *molecule* test to execute on RHEL/CentOS, Debian and Ubuntu.
+To run all scenarios (i.e. test all platforms):
 
+```bash
+$ molecule test --all
+```
+
+To run a specific scenario by name:
+
+```bash
+$ molecule test --scenario-name ubuntu
+$ molecule test --scenario-name debian
+$ molecule test --scenario-name centos
+```
 
 ## Licensing
 This work is licensed under the [LGPL](https://www.gnu.org/licenses/lgpl-3.0.html) AND the [EUPL 1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12).

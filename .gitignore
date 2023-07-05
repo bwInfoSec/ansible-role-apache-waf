@@ -1,0 +1,6 @@
+# Ansible
+*.retry
+
+# IDE folders
+.idea/
+.vscode/
