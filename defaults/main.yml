@@ -8,3 +8,6 @@ modsec_conf_dir: "/opt/mod_security"
 modsec_conf: "{{ modsec_conf_dir }}/modsecurity.conf"
 modsec_unicode_mapping_file: "/opt/mod_security/unicode.mapping"
 test_waf: true
+test_waf_validate_certs: true
+test_waf_urls:
+  - http://localhost/?e=/bin/bash
