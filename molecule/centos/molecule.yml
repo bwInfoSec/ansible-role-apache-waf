@@ -14,6 +14,7 @@ platforms:
     privileged: true
     override_command: false
     dns_servers:
+      - 129.206.100.126
       - 1.1.1.1
       - 8.8.8.8
     tmpfs:

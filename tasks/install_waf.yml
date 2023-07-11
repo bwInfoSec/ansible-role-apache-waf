@@ -123,7 +123,7 @@
 
 - name: Create modsecurity config file
   ansible.builtin.template:
-    src: modsecurity.conf.j2
+    src: "{{ modsec_conf_src_template }}"
     dest: "{{ modsec_conf }}"
     mode: 0644
   notify: "Restart service apache2"
