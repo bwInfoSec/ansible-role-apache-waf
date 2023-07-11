@@ -1,6 +1,7 @@
 ---
 crs_dir: "/opt/owasp_crs"
 crs_version: "v3.3.4"
+crs_conf_src_template: "{{ crs_dir }}/crs-setup.conf.example"
 modsec_tmp_dir: "/var/cache/modsecurity"
 modsec_data_dir: "/var/cache/modsecurity"
 modsec_log_dir: "/var/log/mod_security"
