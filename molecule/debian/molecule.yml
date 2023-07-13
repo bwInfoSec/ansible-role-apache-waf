@@ -13,9 +13,8 @@ platforms:
     image: bwinfosec/debian10-systemd
     privileged: true
     override_command: false
-    dns_servers:
-      - 1.1.1.1
-      - 8.8.8.8
+    networks:
+      - name: molecule_test_network
     tmpfs:
       - /run
       - /run/lock
@@ -28,9 +27,8 @@ platforms:
     image: bwinfosec/debian11-systemd
     privileged: true
     override_command: false
-    dns_servers:
-      - 1.1.1.1
-      - 8.8.8.8
+    networks:
+      - name: molecule_test_network
     tmpfs:
       - /run
       - /run/lock

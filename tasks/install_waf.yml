@@ -44,13 +44,34 @@
     force: true
   changed_when: "'molecule-idempotence-notest' not in ansible_skip_tags"
 
-- name: Copy crs-setup.conf.example to crs-setup.conf
+- name: Check if default config is used
+  ansible.builtin.set_fact:
+    crs_default_config_used: "{{ crs_conf_src_template.endswith('/crs-setup.conf.example') }}"
+
+# Derive a default config from the example config. This is only done once if no custom config is used.
+- name: Copy crs-setup.conf.example to crs-setup.conf.default
   ansible.builtin.copy:
     src: "{{ crs_dir }}/crs-setup.conf.example"
-    dest: "{{ crs_dir }}/crs-setup.conf"
+    dest: "{{ crs_dir }}/crs-setup.conf.default"
     mode: '0644'
     remote_src: true
     force: false
+  when: crs_default_config_used
+
+- name: Patch crs-setup.conf.default
+  ansible.builtin.blockinfile:
+    path: "{{ crs_dir }}/crs-setup.conf.default"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    insertafter: "#   setvar:tx.paranoia_level=1"
+    block: |-
+      SecAction \
+        "id:900000,\
+         phase:1,\
+         nolog,\
+         pass,\
+         t:none,\
+         setvar:tx.paranoia_level=1"
+  when: crs_default_config_used
 
 - name: Copy REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example to REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
   ansible.builtin.copy:
@@ -80,19 +101,24 @@
       Include {{ crs_dir }}/rules/*.conf
       IncludeOptional {{ crs_dir }}/plugins/*-after.conf
 
-- name: Patch crs-setup.conf
-  ansible.builtin.blockinfile:
-    path: "{{ crs_dir }}/crs-setup.conf"
-    marker: "# {mark} ANSIBLE MANAGED BLOCK"
-    insertafter: "#   setvar:tx.paranoia_level=1"
-    block: |-
-      SecAction \
-        "id:900000,\
-         phase:1,\
-         nolog,\
-         pass,\
-         t:none,\
-         setvar:tx.paranoia_level=1"
+# Copy either the example config...
+- name: Copy crs-setup.conf.default to crs-setup.conf
+  ansible.builtin.copy:
+    src: "{{ crs_dir }}/crs-setup.conf.default"
+    dest: "{{ crs_dir }}/crs-setup.conf"
+    mode: '0644'
+    remote_src: true
+    force: true
+  when: crs_default_config_used
+
+# ... or template out the custom config.
+- name: Template custom crs-setup.conf to crs-setup.conf
+  ansible.builtin.template:
+    src: "{{ crs_conf_src_template }}"
+    dest: "{{ crs_dir }}/crs-setup.conf"
+    mode: '0644'
+    force: true
+  when: not crs_default_config_used
 
 - name: Set files for redhat
   when: ansible_facts['os_family']|lower == 'redhat'
@@ -123,7 +149,7 @@
 
 - name: Create modsecurity config file
   ansible.builtin.template:
-    src: modsecurity.conf.j2
+    src: "{{ modsec_conf_src_template }}"
     dest: "{{ modsec_conf }}"
     mode: 0644
   notify: "Restart service apache2"
