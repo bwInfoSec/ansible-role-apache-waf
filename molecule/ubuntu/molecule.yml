@@ -13,10 +13,8 @@ platforms:
     image: bwinfosec/ubuntu1804-systemd
     privileged: true
     override_command: false
-    dns_servers:
-      - 129.206.100.126
-      - 1.1.1.1
-      - 8.8.8.8
+    networks:
+      - name: molecule_test_network
     tmpfs:
       - /run
       - /run/lock
@@ -29,10 +27,8 @@ platforms:
     image: bwinfosec/ubuntu2004-systemd
     privileged: true
     override_command: false
-    dns_servers:
-      - 129.206.100.126
-      - 1.1.1.1
-      - 8.8.8.8
+    networks:
+      - name: molecule_test_network
     tmpfs:
       - /run
       - /run/lock
@@ -45,10 +41,8 @@ platforms:
     image: bwinfosec/ubuntu2204-systemd
     privileged: true
     override_command: false
-    dns_servers:
-      - 129.206.100.126
-      - 1.1.1.1
-      - 8.8.8.8
+    networks:
+      - name: molecule_test_network
     tmpfs:
       - /run
       - /run/lock
