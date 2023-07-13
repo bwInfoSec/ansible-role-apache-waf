@@ -1,0 +1,5 @@
+Include {{ modsec_conf }}
+Include {{ crs_dir }}/crs-setup.conf
+IncludeOptional {{ crs_dir }}/plugins/*-before.conf
+Include {{ crs_dir }}/rules/*.conf
+IncludeOptional {{ crs_dir }}/plugins/*-after.conf

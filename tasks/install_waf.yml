@@ -89,17 +89,12 @@
     force: false
     mode: '0644'
 
-- name: Patch apache2 config
-  ansible.builtin.blockinfile:
-    path: "{{ apache_conf }}"
-    insertafter: EOF
-    marker: "# {mark} ANSIBLE MANAGED BLOCK"
-    block: |
-      Include {{ modsec_conf }}
-      Include {{ crs_dir }}/crs-setup.conf
-      IncludeOptional {{ crs_dir }}/plugins/*-before.conf
-      Include {{ crs_dir }}/rules/*.conf
-      IncludeOptional {{ crs_dir }}/plugins/*-after.conf
+- name: Create Apache WAF config
+  ansible.builtin.template:
+    src: "waf.conf.j2"
+    dest: "{{ apache_conf_dir }}/waf.conf"
+    mode: '0644'
+    force: true
 
 # Copy either the example config...
 - name: Copy crs-setup.conf.default to crs-setup.conf
