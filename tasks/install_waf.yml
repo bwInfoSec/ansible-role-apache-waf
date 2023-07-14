@@ -1,40 +1,23 @@
 ---
-- name: Install packages
+- name: Install packages {{ packages|join(', ') }}
   ansible.builtin.package:
-    name: "{{ item }}"
+    name: "{{ packages }}"
     state: present
     update_cache: true
-  with_items: "{{ packages }}"
 
-- name: Create modsecurity conf dir
+- name: Create directories
   ansible.builtin.file:
-    path: "{{ modsec_conf_dir }}"
-    state: directory
-    owner: "{{ apache_user }}"
-    mode: "0700"
-
-- name: Create modsecurity tmp dir
-  ansible.builtin.file:
-    path: "{{ modsec_tmp_dir }}"
-    state: directory
+    path: "{{ item }}"
     owner: "{{ apache_user }}"
     group: "{{ apache_user }}"
-    mode: "0700"
-
-- name: Create modsecurity log dir
-  ansible.builtin.file:
-    path: "{{ modsec_log_dir }}"
     state: directory
-    owner: "{{ apache_user }}"
     mode: "0700"
-
-- name: Create modsecurity data dir
-  ansible.builtin.file:
-    path: "{{ modsec_data_dir }}"
-    state: directory
-    owner: "{{ apache_user }}"
-    group: "{{ apache_user }}"
-    mode: "0700"
+  with_items:
+    - "{{ crs_conf_dir }}"
+    - "{{ modsec_conf_dir }}"
+    - "{{ modsec_tmp_dir }}"
+    - "{{ modsec_log_dir }}"
+    - "{{ modsec_data_dir }}"
 
 - name: Fetch coreruleset
   ansible.builtin.git:
