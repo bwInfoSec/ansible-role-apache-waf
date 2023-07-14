@@ -1,5 +1,5 @@
 ---
-- name: Include vars
+- name: Include platform-specific variables
   ansible.builtin.include_vars:
     file: "{{ ansible_distribution | lower }}.yml"
 

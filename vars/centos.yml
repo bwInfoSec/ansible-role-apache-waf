@@ -1,11 +1,13 @@
 ---
+lib_modsecurity: mod_security
 packages:
   - git
   - curl
   - httpd
-  - mod_security
+  - "{{ lib_modsecurity }}"
+
 apache_conf: "/etc/httpd/conf/httpd.conf"
-apache_conf_dir: "/etc/httpd/conf.d/"
+apache_conf_dir: "/etc/httpd/conf.d"
 apache_user: "apache"
 
 waf_service_name: httpd

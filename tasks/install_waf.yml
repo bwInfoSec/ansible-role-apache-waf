@@ -1,106 +1,67 @@
 ---
-- name: Install packages
+- name: Install packages {{ packages | join(', ') }}
   ansible.builtin.package:
-    name: "{{ item }}"
+    name: "{{ packages }}"
     state: present
     update_cache: true
-  with_items: "{{ packages }}"
 
-- name: Create modsecurity conf dir
-  ansible.builtin.file:
-    path: "{{ modsec_conf_dir }}"
-    state: directory
-    owner: "{{ apache_user }}"
-    mode: "0700"
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+    manager: auto
+    strategy: first
 
-- name: Create modsecurity tmp dir
-  ansible.builtin.file:
-    path: "{{ modsec_tmp_dir }}"
-    state: directory
-    owner: "{{ apache_user }}"
-    group: "{{ apache_user }}"
-    mode: "0700"
+- name: Set ModSecurity lib version
+  ansible.builtin.set_fact:
+    modsecurity_version: "{{ ansible_facts.packages[lib_modsecurity][0]['version'] }}"
 
-- name: Create modsecurity log dir
+- name: Create directories
   ansible.builtin.file:
-    path: "{{ modsec_log_dir }}"
-    state: directory
-    owner: "{{ apache_user }}"
-    mode: "0700"
-
-- name: Create modsecurity data dir
-  ansible.builtin.file:
-    path: "{{ modsec_data_dir }}"
-    state: directory
+    path: "{{ item }}"
     owner: "{{ apache_user }}"
     group: "{{ apache_user }}"
+    state: directory
     mode: "0700"
+  with_items:
+    - "{{ crs_conf_dir }}"
+    - "{{ modsec_conf_dir }}"
+    - "{{ modsec_tmp_dir }}"
+    - "{{ modsec_log_dir }}"
+    - "{{ modsec_data_dir }}"
 
-- name: Fetch coreruleset
+- name: Create configuration files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: 0644
+    force: true
+  notify: "Restart service apache2"
+  with_items:
+    - { src: "waf.conf.j2",
+        dest: "{{ apache_conf_dir }}/waf.conf" }
+    - { src: "unicode.mapping",
+        dest: "{{ modsec_unicode_mapping_file }}" }
+    - { src: "{{ modsec_conf_src_template }}",
+        dest: "{{ modsec_conf }}" }
+
+- name: Fetch OWASP Core Rule Set (CRS)
   ansible.builtin.git:
     repo: 'https://github.com/coreruleset/coreruleset.git'
     dest: "{{ crs_dir }}"
     version: "{{ crs_version }}"
+    depth: 1
     force: true
-  changed_when: "'molecule-idempotence-notest' not in ansible_skip_tags"
+  changed_when: "result.changed and not ('molecule-idempotence-notest' in ansible_skip_tags)"
+  register: result
 
 - name: Check if default config is used
   ansible.builtin.set_fact:
     crs_default_config_used: "{{ crs_conf_src_template.endswith('/crs-setup.conf.example') }}"
 
-# Derive a default config from the example config. This is only done once if no custom config is used.
-- name: Copy crs-setup.conf.example to crs-setup.conf.default
+# Copy either the example config...
+- name: Copy crs-setup.conf.example to crs-setup.conf
   ansible.builtin.copy:
     src: "{{ crs_dir }}/crs-setup.conf.example"
-    dest: "{{ crs_dir }}/crs-setup.conf.default"
-    mode: '0644'
-    remote_src: true
-    force: false
-  when: crs_default_config_used
-
-- name: Patch crs-setup.conf.default
-  ansible.builtin.blockinfile:
-    path: "{{ crs_dir }}/crs-setup.conf.default"
-    marker: "# {mark} ANSIBLE MANAGED BLOCK"
-    insertafter: "#   setvar:tx.paranoia_level=1"
-    block: |-
-      SecAction \
-        "id:900000,\
-         phase:1,\
-         nolog,\
-         pass,\
-         t:none,\
-         setvar:tx.paranoia_level=1"
-  when: crs_default_config_used
-
-- name: Copy REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example to REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
-  ansible.builtin.copy:
-    remote_src: true
-    src: "{{ crs_dir }}/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example"
-    dest: "{{ crs_dir }}/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf"
-    force: false
-    mode: '0644'
-
-- name: Copy RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example to RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
-  ansible.builtin.copy:
-    remote_src: true
-    src: "{{ crs_dir }}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example"
-    dest: "{{ crs_dir }}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf"
-    force: false
-    mode: '0644'
-
-- name: Create Apache WAF config
-  ansible.builtin.template:
-    src: "waf.conf.j2"
-    dest: "{{ apache_conf_dir }}/waf.conf"
-    mode: '0644'
-    force: true
-
-# Copy either the example config...
-- name: Copy crs-setup.conf.default to crs-setup.conf
-  ansible.builtin.copy:
-    src: "{{ crs_dir }}/crs-setup.conf.default"
-    dest: "{{ crs_dir }}/crs-setup.conf"
+    dest: "{{ crs_conf_dir }}/crs-setup.conf"
     mode: '0644'
     remote_src: true
     force: true
@@ -110,7 +71,7 @@
 - name: Template custom crs-setup.conf to crs-setup.conf
   ansible.builtin.template:
     src: "{{ crs_conf_src_template }}"
-    dest: "{{ crs_dir }}/crs-setup.conf"
+    dest: "{{ crs_conf_dir }}/crs-setup.conf"
     mode: '0644'
     force: true
   when: not crs_default_config_used
@@ -142,26 +103,14 @@
         path: /etc/apache2/mods-enabled/security2.conf
         state: absent
 
-- name: Create modsecurity config file
-  ansible.builtin.template:
-    src: "{{ modsec_conf_src_template }}"
-    dest: "{{ modsec_conf }}"
-    mode: 0644
-  notify: "Restart service apache2"
-
-- name: Create unicode mapping file
-  ansible.builtin.template:
-    src: unicode.mapping
-    dest: "{{ modsec_unicode_mapping_file }}"
-    mode: 0644
-  notify: "Restart service apache2"
-
-- name: Remove error prone rule
+- name: Ensure ModSecurity / CRS compatibility
   ansible.builtin.file:
     path: "{{ crs_dir }}/rules/REQUEST-922-MULTIPART-ATTACK.conf"
     state: absent
-  when: "crs_version == 'v3.3.4'"
-  changed_when: "'molecule-idempotence-notest' not in ansible_skip_tags"
+  when: "modsecurity_version is version('2.9.6', '<')"
+  changed_when: "result.changed and 'molecule-idempotence-notest' not in ansible_skip_tags"
+  register: result
+  notify: Warn about compatibility hack
 
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers

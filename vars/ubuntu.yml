@@ -1,11 +1,13 @@
 ---
+lib_modsecurity: "libapache2-mod-security2"
 packages:
   - git
   - curl
   - apache2
-  - libapache2-mod-security2
+  - "{{ lib_modsecurity }}"
+
 apache_conf: "/etc/apache2/apache2.conf"
-apache_conf_dir: "/etc/apache2/conf-enabled/"
+apache_conf_dir: "/etc/apache2/conf-enabled"
 apache_user: "www-data"
 
 waf_service_name: apache2
