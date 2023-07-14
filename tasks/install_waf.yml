@@ -28,6 +28,21 @@
     - "{{ modsec_log_dir }}"
     - "{{ modsec_data_dir }}"
 
+- name: Create configuration files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: 0644
+    force: true
+  notify: "Restart service apache2"
+  with_items:
+    - { src: "waf.conf.j2",
+        dest: "{{ apache_conf_dir }}/waf.conf" }
+    - { src: "unicode.mapping",
+        dest: "{{ modsec_unicode_mapping_file }}" }
+    - { src: "{{ modsec_conf_src_template }}",
+        dest: "{{ modsec_conf }}" }
+
 - name: Fetch OWASP Core Rule Set (CRS)
   ansible.builtin.git:
     repo: 'https://github.com/coreruleset/coreruleset.git'
@@ -37,13 +52,6 @@
     force: true
   changed_when: "result.changed and not ('molecule-idempotence-notest' in ansible_skip_tags)"
   register: result
-
-- name: Create Apache WAF configuration
-  ansible.builtin.template:
-    src: "waf.conf.j2"
-    dest: "{{ apache_conf_dir }}/waf.conf"
-    mode: '0644'
-    force: true
 
 - name: Check if default config is used
   ansible.builtin.set_fact:
@@ -94,20 +102,6 @@
       ansible.builtin.file:
         path: /etc/apache2/mods-enabled/security2.conf
         state: absent
-
-- name: Create modsecurity config file
-  ansible.builtin.template:
-    src: "{{ modsec_conf_src_template }}"
-    dest: "{{ modsec_conf }}"
-    mode: 0644
-  notify: "Restart service apache2"
-
-- name: Create unicode mapping file
-  ansible.builtin.template:
-    src: unicode.mapping
-    dest: "{{ modsec_unicode_mapping_file }}"
-    mode: 0644
-  notify: "Restart service apache2"
 
 - name: Ensure ModSecurity / CRS compatibility
   ansible.builtin.file:
