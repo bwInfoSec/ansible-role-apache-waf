@@ -3,3 +3,15 @@
   ansible.builtin.service:
     name: "{{ waf_service_name }}"
     state: restarted
+
+- name: Warn about compatibility hack
+  ansible.builtin.debug:
+    msg: >
+      CAUTION! Running ModSecurity v{{ modsecurity_version }} with Core Rule Set {{ crs_version }}.
+      CRS {{ crs_version }} contains a critical fix for CVE-2022-39956 that is incompatible
+      with ModSecurity v{{ modsecurity_version }}.
+      As a workaround, rule 'REQUEST-922-MULTIPART-ATTACK.conf' has been removed to ensure compatibility.
+      We strongly advise updating your ModSecurity installation to 2.9.6 or higher,
+      or to downgrade your CRS to a version that does not include this fix (not recommended).
+      See CVE https://nvd.nist.gov/vuln/detail/CVE-2022-39956 for more details.
+  changed_when: true

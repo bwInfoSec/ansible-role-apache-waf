@@ -1,9 +1,18 @@
 ---
-- name: Install packages {{ packages|join(', ') }}
+- name: Install packages {{ packages | join(', ') }}
   ansible.builtin.package:
     name: "{{ packages }}"
     state: present
     update_cache: true
+
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+    manager: auto
+    strategy: first
+
+- name: Set ModSecurity lib version
+  ansible.builtin.set_fact:
+    modsecurity_version: "{{ ansible_facts.packages[lib_modsecurity][0]['version'] }}"
 
 - name: Create directories
   ansible.builtin.file:
@@ -24,6 +33,7 @@
     repo: 'https://github.com/coreruleset/coreruleset.git'
     dest: "{{ crs_dir }}"
     version: "{{ crs_version }}"
+    depth: 1
     force: true
   changed_when: "result.changed and not ('molecule-idempotence-notest' in ansible_skip_tags)"
   register: result
@@ -99,13 +109,14 @@
     mode: 0644
   notify: "Restart service apache2"
 
-- name: Remove error prone rule
+- name: Ensure ModSecurity / CRS compatibility
   ansible.builtin.file:
     path: "{{ crs_dir }}/rules/REQUEST-922-MULTIPART-ATTACK.conf"
     state: absent
-  when: "crs_version == 'v3.3.4'"
+  when: "modsecurity_version is version('2.9.6', '<')"
   changed_when: "result.changed and 'molecule-idempotence-notest' not in ansible_skip_tags"
   register: result
+  notify: Warn about compatibility hack
 
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
