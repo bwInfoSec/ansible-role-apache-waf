@@ -19,71 +19,31 @@
     - "{{ modsec_log_dir }}"
     - "{{ modsec_data_dir }}"
 
-- name: Fetch coreruleset
+- name: Fetch OWASP Core Rule Set (CRS)
   ansible.builtin.git:
     repo: 'https://github.com/coreruleset/coreruleset.git'
     dest: "{{ crs_dir }}"
     version: "{{ crs_version }}"
     force: true
-  changed_when: "'molecule-idempotence-notest' not in ansible_skip_tags"
+  changed_when: "result.changed and not ('molecule-idempotence-notest' in ansible_skip_tags)"
+  register: result
 
-- name: Check if default config is used
-  ansible.builtin.set_fact:
-    crs_default_config_used: "{{ crs_conf_src_template.endswith('/crs-setup.conf.example') }}"
-
-# Derive a default config from the example config. This is only done once if no custom config is used.
-- name: Copy crs-setup.conf.example to crs-setup.conf.default
-  ansible.builtin.copy:
-    src: "{{ crs_dir }}/crs-setup.conf.example"
-    dest: "{{ crs_dir }}/crs-setup.conf.default"
-    mode: '0644'
-    remote_src: true
-    force: false
-  when: crs_default_config_used
-
-- name: Patch crs-setup.conf.default
-  ansible.builtin.blockinfile:
-    path: "{{ crs_dir }}/crs-setup.conf.default"
-    marker: "# {mark} ANSIBLE MANAGED BLOCK"
-    insertafter: "#   setvar:tx.paranoia_level=1"
-    block: |-
-      SecAction \
-        "id:900000,\
-         phase:1,\
-         nolog,\
-         pass,\
-         t:none,\
-         setvar:tx.paranoia_level=1"
-  when: crs_default_config_used
-
-- name: Copy REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example to REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
-  ansible.builtin.copy:
-    remote_src: true
-    src: "{{ crs_dir }}/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example"
-    dest: "{{ crs_dir }}/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf"
-    force: false
-    mode: '0644'
-
-- name: Copy RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example to RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
-  ansible.builtin.copy:
-    remote_src: true
-    src: "{{ crs_dir }}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf.example"
-    dest: "{{ crs_dir }}/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf"
-    force: false
-    mode: '0644'
-
-- name: Create Apache WAF config
+- name: Create Apache WAF configuration
   ansible.builtin.template:
     src: "waf.conf.j2"
     dest: "{{ apache_conf_dir }}/waf.conf"
     mode: '0644'
     force: true
 
+- name: Check if default config is used
+  ansible.builtin.set_fact:
+    crs_default_config_used: "{{ crs_conf_src_template.endswith('/crs-setup.conf.example') }}"
+
 # Copy either the example config...
-- name: Copy crs-setup.conf.default to crs-setup.conf
+- name: Copy crs-setup.conf.example to crs-setup.conf
   ansible.builtin.copy:
-    src: "{{ crs_dir }}/crs-setup.conf.default"
-    dest: "{{ crs_dir }}/crs-setup.conf"
+    src: "{{ crs_dir }}/crs-setup.conf.example"
+    dest: "{{ crs_conf_dir }}/crs-setup.conf"
     mode: '0644'
     remote_src: true
     force: true
@@ -93,7 +53,7 @@
 - name: Template custom crs-setup.conf to crs-setup.conf
   ansible.builtin.template:
     src: "{{ crs_conf_src_template }}"
-    dest: "{{ crs_dir }}/crs-setup.conf"
+    dest: "{{ crs_conf_dir }}/crs-setup.conf"
     mode: '0644'
     force: true
   when: not crs_default_config_used
@@ -144,7 +104,8 @@
     path: "{{ crs_dir }}/rules/REQUEST-922-MULTIPART-ATTACK.conf"
     state: absent
   when: "crs_version == 'v3.3.4'"
-  changed_when: "'molecule-idempotence-notest' not in ansible_skip_tags"
+  changed_when: "result.changed and 'molecule-idempotence-notest' not in ansible_skip_tags"
+  register: result
 
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
